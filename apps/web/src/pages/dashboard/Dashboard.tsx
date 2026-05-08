@@ -89,13 +89,26 @@ export function Dashboard() {
         {/* Sidebar */}
         <aside className="w-52 bg-zinc-900 border-r border-zinc-800 flex flex-col flex-shrink-0">
           <div className="p-5 border-b border-zinc-800">
-            <div className="flex items-center gap-2">
+            {/* Logo — não clicável */}
+            <div className="flex items-center gap-2 select-none">
               <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center">
-                <span className="text-zinc-950 font-bold text-sm">S</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  stroke="#052e16"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <path d="M8 2.5L11.5 6 8 9.5M3 6h8.5" />
+                </svg>
               </div>
               <div>
                 <p className="text-white text-sm font-medium">snip.dev</p>
-                <p className="text-zinc-500 text-xs">LINK TRACKER</p>
+                <p className="text-zinc-500 text-xs tracking-widest">
+                  LINK TRACKER
+                </p>
               </div>
             </div>
           </div>
@@ -120,11 +133,21 @@ export function Dashboard() {
         {/* Main */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Topbar */}
-          <div className="px-8 py-5 border-b border-zinc-800 bg-zinc-950">
-            <h1 className="text-base font-medium">Dashboard</h1>
-            <p className="text-zinc-500 text-xs mt-0.5">
-              Bem-vindo, {user?.name || user?.email}
-            </p>
+          <div className="px-8 py-5 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between">
+            <div>
+              <h1 className="text-base font-medium">Dashboard</h1>
+              <p className="text-zinc-500 text-xs mt-0.5">
+                Bem-vindo, {user?.name || user?.email}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/login')}
+              className="border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs"
+            >
+              ← Início
+            </Button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
@@ -199,12 +222,18 @@ export function Dashboard() {
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-emerald-400 text-sm font-medium">
+                          {/* Link clicável com _blank */}
+                          <a
+                            href={link.shortUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors"
+                          >
                             {link.shortUrl.replace(
                               'http://localhost:3333',
                               'snip.dev',
                             )}
-                          </span>
+                          </a>
                           {link.aiGenerated && (
                             <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-1.5">
                               IA
