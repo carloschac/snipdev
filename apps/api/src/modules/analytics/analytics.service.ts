@@ -86,4 +86,33 @@ export class AnalyticsService {
       clicksByReferer,
     };
   }
+
+  async getClicksByDay(userId: string, days: number) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const clicks = await prisma.click.findMany({
+      where: {
+        link: { userId },
+        createdAt: { gte: since },
+      },
+      select: { createdAt: true },
+    });
+
+    const grouped: Record<string, number> = {};
+
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - (days - 1 - i));
+      const key = date.toISOString().split('T')[0];
+      grouped[key] = 0;
+    }
+
+    clicks.forEach((click) => {
+      const key = click.createdAt.toISOString().split('T')[0];
+      if (grouped[key] !== undefined) grouped[key]++;
+    });
+
+    return Object.entries(grouped).map(([date, clicks]) => ({ date, clicks }));
+  }
 }

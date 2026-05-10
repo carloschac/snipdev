@@ -33,4 +33,21 @@ export async function analyticsController(app: FastifyInstance) {
       }
     },
   );
+  app.get(
+    '/analytics/clicks-by-day',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
+      try {
+        const user = request.user as { id: string };
+        const { days } = request.query as { days?: string };
+        const result = await analyticsService.getClicksByDay(
+          user.id,
+          Number(days) || 30,
+        );
+        return reply.send(result);
+      } catch (err: any) {
+        return reply.status(400).send({ error: err.message });
+      }
+    },
+  );
 }

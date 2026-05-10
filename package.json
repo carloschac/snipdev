@@ -1,0 +1,10 @@
+{
+  "name": "snipdev",
+  "scripts": {
+    "dev": "docker compose up -d && concurrently \"cd apps/api && pnpm dev\" \"cd apps/web && pnpm dev\"",
+    "api": "cd apps/api && pnpm dev",
+    "web": "cd apps/web && pnpm dev",
+    "db": "docker compose up -d",
+    "db:stop": "docker compose down"
+  }
+}

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Sidebar } from '@/components/Sidebar';
+import { Topbar } from '@/components/Topbar';
 
 interface Link {
   id: string;
@@ -26,13 +28,27 @@ interface Overview {
   links: Link[];
 }
 
+function getFavicon(url: string) {
+  if (url.includes('github')) return '🐙';
+  if (url.includes('docker')) return '🐳';
+  if (url.includes('prisma')) return '📦';
+  if (url.includes('notion')) return '📝';
+  if (url.includes('youtube')) return '▶️';
+  if (url.includes('figma')) return '🎨';
+  if (url.includes('twitter') || url.includes('x.com')) return '🐦';
+  if (url.includes('linkedin')) return '💼';
+  if (url.includes('reddit')) return '🤖';
+  if (url.includes('google')) return '🔍';
+  return '🔗';
+}
+
 export function Dashboard() {
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'active' | 'ai'>('all');
 
   const { data: overview, isLoading } = useQuery<Overview>({
     queryKey: ['analytics'],
@@ -78,80 +94,28 @@ export function Dashboard() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const filtered = (overview?.links ?? []).filter((link) => {
+    if (filter === 'active') return link.active;
+    if (filter === 'ai') return link.aiGenerated;
+    return true;
+  });
+
+  const avgClicks = overview?.totalLinks
+    ? (overview.totalClicks / overview.totalLinks).toFixed(1)
+    : '0';
+
+  const activePercent = overview?.totalLinks
+    ? Math.round((overview.activeLinks / overview.totalLinks) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <div className="flex h-screen">
-        {/* Sidebar */}
-        <aside className="w-52 bg-zinc-900 border-r border-zinc-800 flex flex-col flex-shrink-0">
-          <div className="p-5 border-b border-zinc-800">
-            {/* Logo — não clicável */}
-            <div className="flex items-center gap-2 select-none">
-              <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  stroke="#052e16"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                >
-                  <path d="M8 2.5L11.5 6 8 9.5M3 6h8.5" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-white text-sm font-medium">snip.dev</p>
-                <p className="text-zinc-500 text-xs tracking-widest">
-                  LINK TRACKER
-                </p>
-              </div>
-            </div>
-          </div>
-          <nav className="flex-1 p-3 flex flex-col gap-1">
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm w-full text-left">
-              Dashboard
-            </button>
-          </nav>
-          <div className="p-4 border-t border-zinc-800">
-            <p className="text-xs text-zinc-500 mb-2 truncate">{user?.email}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="w-full border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
-            >
-              Sair
-            </Button>
-          </div>
-        </aside>
-
-        {/* Main */}
+        <Sidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Topbar */}
-          <div className="px-8 py-5 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between">
-            <div>
-              <h1 className="text-base font-medium">Dashboard</h1>
-              <p className="text-zinc-500 text-xs mt-0.5">
-                Bem-vindo, {user?.name || user?.email}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/login')}
-              className="border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs"
-            >
-              ← Início
-            </Button>
-          </div>
+          <Topbar title="Dashboard" />
 
           <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
-            {/* Encurtar */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-xs text-zinc-500 mb-3">Encurtar novo link</p>
               <form onSubmit={handleSubmit} className="flex gap-2">
@@ -161,6 +125,22 @@ export function Dashboard() {
                   onChange={(e) => setUrl(e.target.value)}
                   className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                 />
+                <div
+                  className={`flex items-center gap-1.5 px-3 h-9 rounded-md border text-xs font-medium select-none ${
+                    import.meta.env.VITE_AI_ENABLED === 'true'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      : 'bg-red-500/10 border-red-500/30 text-red-400'
+                  }`}
+                >
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      import.meta.env.VITE_AI_ENABLED === 'true'
+                        ? 'bg-emerald-400'
+                        : 'bg-red-400'
+                    }`}
+                  />
+                  Slug por IA
+                </div>
                 <Button
                   type="submit"
                   disabled={createLink.isPending}
@@ -169,16 +149,26 @@ export function Dashboard() {
                   {createLink.isPending ? 'Encurtando...' : 'Encurtar'}
                 </Button>
               </form>
+              <p className="text-zinc-600 text-xs mt-2">
+                A IA gera um slug legível baseado no conteúdo da URL — nada de{' '}
+                <code className="bg-zinc-800 px-1 py-0.5 rounded text-zinc-400">
+                  xB3k9
+                </code>
+              </p>
               {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
             </div>
 
-            {/* Cards de métricas */}
             <div className="grid grid-cols-3 gap-4">
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardContent className="p-5">
                   <p className="text-xs text-zinc-500 mb-1">Total de links</p>
                   <p className="text-2xl font-medium text-white">
                     {isLoading ? '—' : (overview?.totalLinks ?? 0)}
+                  </p>
+                  <p className="text-xs text-emerald-400 mt-1">
+                    {overview?.totalLinks
+                      ? `${overview.totalLinks} criados no total`
+                      : 'Nenhum link ainda'}
                   </p>
                 </CardContent>
               </Card>
@@ -188,6 +178,9 @@ export function Dashboard() {
                   <p className="text-2xl font-medium text-white">
                     {isLoading ? '—' : (overview?.totalClicks ?? 0)}
                   </p>
+                  <p className="text-xs text-emerald-400 mt-1">
+                    média de {avgClicks} por link
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-zinc-900 border-zinc-800">
@@ -196,33 +189,57 @@ export function Dashboard() {
                   <p className="text-2xl font-medium text-white">
                     {isLoading ? '—' : (overview?.activeLinks ?? 0)}
                   </p>
+                  <p className="text-xs text-emerald-400 mt-1">
+                    {activePercent}% do total
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Tabela de links */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex-1">
-              <div className="px-5 py-4 border-b border-zinc-800">
+              <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
                 <p className="text-sm font-medium">Links recentes</p>
+                <div className="flex gap-2">
+                  {(['all', 'active', 'ai'] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                        filter === f
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      {f === 'all'
+                        ? 'Todos'
+                        : f === 'active'
+                          ? 'Ativos'
+                          : 'Com IA'}
+                    </button>
+                  ))}
+                </div>
               </div>
+
               {isLoading ? (
                 <div className="p-8 text-center text-zinc-500 text-sm">
                   Carregando...
                 </div>
-              ) : overview?.links.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <div className="p-8 text-center text-zinc-500 text-sm">
-                  Nenhum link ainda. Encurte o primeiro acima!
+                  Nenhum link encontrado.
                 </div>
               ) : (
                 <div className="divide-y divide-zinc-800">
-                  {overview?.links.map((link) => (
+                  {filtered.map((link) => (
                     <div
                       key={link.id}
                       className="flex items-center gap-4 px-5 py-4"
                     >
+                      <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-sm flex-shrink-0">
+                        {getFavicon(link.originalUrl)}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          {/* Link clicável com _blank */}
                           <a
                             href={link.shortUrl}
                             target="_blank"
@@ -251,6 +268,14 @@ export function Dashboard() {
                         <p className="text-xs text-zinc-500">cliques</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/analytics/${link.id}`)}
+                          className="border-zinc-700 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 text-xs"
+                        >
+                          Analytics
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

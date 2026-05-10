@@ -38,4 +38,6 @@ export const linksService = {
 export const analyticsService = {
   overview: () => api.get('/analytics'),
   linkStats: (linkId: string) => api.get(`/analytics/${linkId}`),
+  clicksByDay: (days: number) =>
+    api.get(`/analytics/clicks-by-day?days=${days}`),
 };
