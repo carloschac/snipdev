@@ -17,6 +17,7 @@ interface Link {
   shortUrl: string;
   aiGenerated: boolean;
   active: boolean;
+  public: boolean;
   clicks: number;
   createdAt: string;
 }
@@ -79,6 +80,24 @@ export function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    },
+  });
+
+  const togglePublic = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await linksService.togglePublic(id);
+      return result.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['analytics'], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          links: old.links.map((link: Link) =>
+            link.id === data.id ? { ...link, public: data.public } : link,
+          ),
+        };
+      });
     },
   });
 
@@ -268,6 +287,18 @@ export function Dashboard() {
                         <p className="text-xs text-zinc-500">cliques</p>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => togglePublic.mutate(link.id)}
+                          className={`border-zinc-700 text-xs hover:bg-zinc-800 ${
+                            link.public
+                              ? 'text-emerald-400 hover:text-emerald-300'
+                              : 'text-zinc-500 hover:text-zinc-300'
+                          }`}
+                        >
+                          {link.public ? '🌐 Público' : '🔒 Privado'}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

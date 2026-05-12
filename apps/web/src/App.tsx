@@ -7,6 +7,7 @@ import { LinkAnalytics } from '@/pages/dashboard/LinkAnalytics';
 import { Links } from '@/pages/dashboard/Links';
 import { Profile } from '@/pages/dashboard/Profile';
 import { Settings } from '@/pages/dashboard/Settings';
+import { PublicProfile } from '@/pages/Profile';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Home } from '@/pages/Home';
 
@@ -63,6 +64,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/profile/:userId" element={<PublicProfile />} />
       <Route path="/home" element={<Home />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

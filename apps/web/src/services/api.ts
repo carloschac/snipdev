@@ -33,6 +33,7 @@ export const linksService = {
   create: (url: string) => api.post('/links', { url }),
   list: () => api.get('/links'),
   delete: (id: string) => api.delete(`/links/${id}`),
+  togglePublic: (id: string) => api.patch(`/links/${id}/toggle-public`, {}),
 };
 
 export const analyticsService = {
@@ -40,4 +41,8 @@ export const analyticsService = {
   linkStats: (linkId: string) => api.get(`/analytics/${linkId}`),
   clicksByDay: (days: number) =>
     api.get(`/analytics/clicks-by-day?days=${days}`),
+};
+
+export const profileService = {
+  getPublic: (userId: string) => api.get(`/profile/${userId}`),
 };

@@ -10,6 +10,7 @@ export class AnalyticsService {
         originalUrl: true,
         aiGenerated: true,
         active: true,
+        public: true,
         createdAt: true,
         _count: { select: { clicks: true } },
       },
