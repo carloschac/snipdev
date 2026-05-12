@@ -25,6 +25,17 @@ export async function linksController(app: FastifyInstance) {
     }
   });
 
+  // Perfil público — rota pública
+  app.get('/profile/:userId', async (request, reply) => {
+    try {
+      const { userId } = request.params as { userId: string };
+      const data = await linksService.getPublicLinks(userId);
+      return reply.send(data);
+    } catch (err: any) {
+      return reply.status(404).send({ error: err.message });
+    }
+  });
+
   // Rotas protegidas
   app.post('/links', { preHandler: authMiddleware }, async (request, reply) => {
     try {
@@ -46,6 +57,21 @@ export async function linksController(app: FastifyInstance) {
       return reply.status(400).send({ error: err.message });
     }
   });
+
+  app.patch(
+    '/links/:id/toggle-public',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const user = request.user as { id: string };
+        const result = await linksService.togglePublic(id, user.id);
+        return reply.send(result);
+      } catch (err: any) {
+        return reply.status(400).send({ error: err.message });
+      }
+    },
+  );
 
   app.delete(
     '/links/:id',

@@ -12,7 +12,9 @@ export const prisma = new PrismaClient();
 
 const app = Fastify({ logger: true });
 
-app.register(cors, { origin: 'http://localhost:5173' });
+app.register(cors, {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+});
 app.register(helmet);
 app.register(jwt, { secret: process.env.JWT_SECRET! });
 

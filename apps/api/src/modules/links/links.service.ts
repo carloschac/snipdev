@@ -15,18 +15,22 @@ export class LinksService {
     }
 
     const link = await prisma.link.create({
-      data: { slug, originalUrl, userId, aiGenerated },
+      data: { slug, originalUrl, userId, aiGenerated, public: true },
       select: {
         id: true,
         slug: true,
         originalUrl: true,
         aiGenerated: true,
         active: true,
+        public: true,
         createdAt: true,
       },
     });
 
-    return { ...link, shortUrl: `http://localhost:3333/r/${link.slug}` };
+    return {
+      ...link,
+      shortUrl: `${process.env.API_URL || 'http://localhost:3333'}/r/${link.slug}`,
+    };
   }
 
   async findByUser(userId: string) {
@@ -39,6 +43,7 @@ export class LinksService {
         originalUrl: true,
         aiGenerated: true,
         active: true,
+        public: true,
         createdAt: true,
         _count: { select: { clicks: true } },
       },
@@ -47,15 +52,59 @@ export class LinksService {
     return links.map((link) => ({
       ...link,
       clicks: link._count.clicks,
-      shortUrl: `http://localhost:3333/r/${link.slug}`,
+      shortUrl: `${process.env.API_URL || 'http://localhost:3333'}/r/${link.slug}`,
     }));
+  }
+
+  async togglePublic(linkId: string, userId: string) {
+    const link = await prisma.link.findUnique({ where: { id: linkId } });
+    if (!link) throw new Error('Link não encontrado');
+    if (link.userId !== userId) throw new Error('Sem permissão');
+
+    const updated = await prisma.link.update({
+      where: { id: linkId },
+      data: { public: !link.public },
+      select: { id: true, public: true },
+    });
+
+    return updated;
+  }
+
+  async getPublicLinks(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+
+    if (!user) throw new Error('Usuário não encontrado');
+
+    const links = await prisma.link.findMany({
+      where: { userId, public: true, active: true },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        slug: true,
+        originalUrl: true,
+        aiGenerated: true,
+        createdAt: true,
+        _count: { select: { clicks: true } },
+      },
+    });
+
+    return {
+      user: { name: user.name, email: user.email },
+      links: links.map((link) => ({
+        ...link,
+        clicks: link._count.clicks,
+        shortUrl: `${process.env.API_URL || 'http://localhost:3333'}/r/${link.slug}`,
+      })),
+    };
   }
 
   async delete(linkId: string, userId: string) {
     const link = await prisma.link.findUnique({ where: { id: linkId } });
     if (!link) throw new Error('Link não encontrado');
     if (link.userId !== userId) throw new Error('Sem permissão');
-
     await prisma.link.delete({ where: { id: linkId } });
     return { message: 'Link removido com sucesso' };
   }

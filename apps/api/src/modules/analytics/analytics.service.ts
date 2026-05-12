@@ -29,7 +29,7 @@ export class AnalyticsService {
       links: links.map((link) => ({
         ...link,
         clicks: link._count.clicks,
-        shortUrl: `http://localhost:3333/r/${link.slug}`,
+        shortUrl: `${process.env.API_URL || 'http://localhost:3333'}/r/${link.slug}`,
       })),
     };
   }
@@ -78,7 +78,7 @@ export class AnalyticsService {
         aiGenerated: link.aiGenerated,
         active: link.active,
         createdAt: link.createdAt,
-        shortUrl: `http://localhost:3333/r/${link.slug}`,
+        shortUrl: `${process.env.API_URL || 'http://localhost:3333'}/r/${link.slug}`,
       },
       totalClicks: link.clicks.length,
       clicksByDay,
