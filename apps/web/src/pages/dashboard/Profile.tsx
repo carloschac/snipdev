@@ -116,7 +116,8 @@ export function Profile() {
         <Sidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
           <Topbar title="Perfil" subtitle="Gerencie suas informações pessoais" />
-          <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-5 max-w-lg">
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 max-w-4xl">
 
             {/* Identidade pública */}
             <Card className="bg-zinc-900 border-zinc-800">
@@ -272,6 +273,7 @@ export function Profile() {
               </CardContent>
             </Card>
 
+            </div>
           </div>
         </main>
       </div>
