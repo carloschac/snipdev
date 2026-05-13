@@ -1,5 +1,23 @@
 import { prisma } from '../../server';
 import { generateSlug } from '../../shared/utils/slug';
+import geoip from 'geoip-lite';
+
+function parseBrowser(ua?: string): string {
+  if (!ua) return 'Desconhecido';
+  if (/edg\//i.test(ua)) return 'Edge';
+  if (/chrome/i.test(ua)) return 'Chrome';
+  if (/firefox/i.test(ua)) return 'Firefox';
+  if (/safari/i.test(ua)) return 'Safari';
+  if (/opera|opr\//i.test(ua)) return 'Opera';
+  return 'Outro';
+}
+
+function parseDevice(ua?: string): string {
+  if (!ua) return 'Desconhecido';
+  if (/mobile/i.test(ua)) return 'Mobile';
+  if (/tablet|ipad/i.test(ua)) return 'Tablet';
+  return 'Desktop';
+}
 
 export class LinksService {
   async create(userId: string, originalUrl: string) {
@@ -122,12 +140,17 @@ export class LinksService {
     });
     if (!link) throw new Error('Link não encontrado');
 
+    const geo = meta.ip ? geoip.lookup(meta.ip) : null;
+
     await prisma.click.create({
       data: {
         linkId: link.id,
         ip: meta.ip,
         referer: meta.referer,
-        browser: meta.userAgent,
+        browser: parseBrowser(meta.userAgent),
+        device: parseDevice(meta.userAgent),
+        country: geo?.country ?? null,
+        city: geo?.city ?? null,
       },
     });
 
