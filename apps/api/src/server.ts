@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { authController } from './modules/auth/auth.controller';
 import { linksController } from './modules/links/links.controller';
 import { analyticsController } from './modules/analytics/analytics.controller';
+import { profileController } from './modules/profile/profile.controller';
 import 'dotenv/config';
 
 export const prisma = new PrismaClient();
@@ -29,6 +30,7 @@ app.register(rateLimit, {
 app.register(authController);
 app.register(linksController);
 app.register(analyticsController);
+app.register(profileController);
 
 // Health check
 app.get('/health', async () => ({ status: 'ok', timestamp: new Date() }));
