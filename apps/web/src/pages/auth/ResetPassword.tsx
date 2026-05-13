@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/auth.context';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { authService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,24 +11,45 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 
-export function Login() {
+export function ResetPassword() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const token = searchParams.get('token') || '';
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="text-center">
+          <p className="text-white font-medium mb-2">Link inválido</p>
+          <p className="text-zinc-500 text-sm mb-4">
+            Este link de redefinição não é válido ou expirou.
+          </p>
+          <Link to="/forgot-password" className="text-emerald-400 hover:text-emerald-300 text-sm">
+            Solicitar novo link
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (newPassword !== confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
+    }
     setLoading(true);
     try {
-      const { data } = await authService.login(email, password);
-      login(data.user, data.token);
-      navigate('/dashboard');
+      await authService.resetPassword(token, newPassword);
+      navigate('/login', { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao fazer login');
+      setError(err.response?.data?.error || 'Token inválido ou expirado');
     } finally {
       setLoading(false);
     }
@@ -44,9 +64,9 @@ export function Login() {
               <span className="text-zinc-950 font-bold text-lg">S</span>
             </div>
           </div>
-          <CardTitle className="text-white text-2xl">snip.dev</CardTitle>
+          <CardTitle className="text-white text-2xl">Nova senha</CardTitle>
           <CardDescription className="text-zinc-400">
-            Entre na sua conta
+            Defina sua nova senha abaixo
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -57,49 +77,39 @@ export function Login() {
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-zinc-400">E-mail</label>
+              <label className="text-sm text-zinc-400">Nova senha</label>
               <Input
-                type="email"
-                placeholder="carlos@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="password"
+                placeholder="••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                minLength={6}
                 required
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-zinc-400">Senha</label>
+              <label className="text-sm text-zinc-400">Confirmar senha</label>
               <Input
                 type="password"
                 placeholder="••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                minLength={6}
                 required
               />
-            </div>
-            <div className="flex items-center justify-end">
-              <Link
-                to="/forgot-password"
-                className="text-xs text-zinc-500 hover:text-zinc-300"
-              >
-                Esqueci minha senha
-              </Link>
             </div>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white mt-2"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? 'Redefinindo...' : 'Redefinir senha'}
             </Button>
             <p className="text-center text-sm text-zinc-500">
-              Não tem conta?{' '}
-              <Link
-                to="/register"
-                className="text-emerald-400 hover:text-emerald-300"
-              >
-                Criar conta
+              <Link to="/login" className="text-emerald-400 hover:text-emerald-300">
+                Voltar ao login
               </Link>
             </p>
           </form>
