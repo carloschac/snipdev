@@ -1,8 +1,26 @@
 import { prisma } from '../../server';
 import { generateSlug } from '../../shared/utils/slug';
+import geoip from 'geoip-lite';
+
+function parseBrowser(ua?: string): string {
+  if (!ua) return 'Desconhecido';
+  if (/edg\//i.test(ua)) return 'Edge';
+  if (/chrome/i.test(ua)) return 'Chrome';
+  if (/firefox/i.test(ua)) return 'Firefox';
+  if (/safari/i.test(ua)) return 'Safari';
+  if (/opera|opr\//i.test(ua)) return 'Opera';
+  return 'Outro';
+}
+
+function parseDevice(ua?: string): string {
+  if (!ua) return 'Desconhecido';
+  if (/mobile/i.test(ua)) return 'Mobile';
+  if (/tablet|ipad/i.test(ua)) return 'Tablet';
+  return 'Desktop';
+}
 
 export class LinksService {
-  async create(userId: string, originalUrl: string) {
+  async create(userId: string, originalUrl: string, expiresAt?: Date) {
     const aiEnabled = process.env.AI_ENABLED === 'true';
     let slug: string;
     let aiGenerated = false;
@@ -15,7 +33,7 @@ export class LinksService {
     }
 
     const link = await prisma.link.create({
-      data: { slug, originalUrl, userId, aiGenerated, public: true },
+      data: { slug, originalUrl, userId, aiGenerated, public: true, expiresAt },
       select: {
         id: true,
         slug: true,
@@ -23,6 +41,7 @@ export class LinksService {
         aiGenerated: true,
         active: true,
         public: true,
+        expiresAt: true,
         createdAt: true,
       },
     });
@@ -44,6 +63,7 @@ export class LinksService {
         aiGenerated: true,
         active: true,
         public: true,
+        expiresAt: true,
         createdAt: true,
         _count: { select: { clicks: true } },
       },
@@ -122,12 +142,21 @@ export class LinksService {
     });
     if (!link) throw new Error('Link não encontrado');
 
+    if (link.expiresAt && link.expiresAt < new Date()) {
+      throw new Error('Link expirado');
+    }
+
+    const geo = meta.ip ? geoip.lookup(meta.ip) : null;
+
     await prisma.click.create({
       data: {
         linkId: link.id,
         ip: meta.ip,
         referer: meta.referer,
-        browser: meta.userAgent,
+        browser: parseBrowser(meta.userAgent),
+        device: parseDevice(meta.userAgent),
+        country: geo?.country ?? null,
+        city: geo?.city ?? null,
       },
     });
 

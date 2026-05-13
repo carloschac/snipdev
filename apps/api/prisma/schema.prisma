@@ -25,8 +25,9 @@ model Link {
   originalUrl String
   title       String?
   aiGenerated Boolean  @default(false)
-  active      Boolean  @default(true)
-  public      Boolean  @default(true)
+  active      Boolean   @default(true)
+  public      Boolean   @default(true)
+  expiresAt   DateTime?
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())

@@ -5,7 +5,6 @@ import { linksService, analyticsService } from '@/services/api';
 import { Sidebar } from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/auth.context';
 import { Topbar } from '@/components/Topbar';
 
 interface Link {
@@ -24,7 +23,6 @@ type Filter = 'all' | 'active' | 'ai';
 
 export function Links() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>('all');
   const [copied, setCopied] = useState<string | null>(null);

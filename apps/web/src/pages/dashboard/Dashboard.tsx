@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/auth.context';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { linksService, analyticsService } from '@/services/api';
@@ -18,6 +17,7 @@ interface Link {
   aiGenerated: boolean;
   active: boolean;
   public: boolean;
+  expiresAt: string | null;
   clicks: number;
   createdAt: string;
 }
@@ -43,10 +43,30 @@ function getFavicon(url: string) {
   return '🔗';
 }
 
+function isExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt) < new Date();
+}
+
+function formatExpiresAt(dateStr: string): string {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function defaultExpiresAt(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().split('T')[0];
+}
+
 export function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [url, setUrl] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'ai'>('all');
@@ -60,13 +80,14 @@ export function Dashboard() {
   });
 
   const createLink = useMutation({
-    mutationFn: async (url: string) => {
-      const { data } = await linksService.create(url);
+    mutationFn: async ({ url, expiresAt }: { url: string; expiresAt?: string }) => {
+      const { data } = await linksService.create(url, expiresAt || undefined);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
       setUrl('');
+      setExpiresAt('');
       setError('');
     },
     onError: (err: any) => {
@@ -104,7 +125,12 @@ export function Dashboard() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
-    createLink.mutate(url);
+    createLink.mutate({
+      url,
+      expiresAt: expiresAt
+        ? new Date(expiresAt).toISOString()
+        : undefined,
+    });
   };
 
   const handleCopy = (shortUrl: string) => {
@@ -137,38 +163,80 @@ export function Dashboard() {
           <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <p className="text-xs text-zinc-500 mb-3">Encurtar novo link</p>
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                  placeholder="https://exemplo.com/seu-link-longo"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                />
-                <div
-                  className={`flex items-center gap-1.5 px-3 h-9 rounded-md border text-xs font-medium select-none ${
-                    import.meta.env.VITE_AI_ENABLED === 'true'
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : 'bg-red-500/10 border-red-500/30 text-red-400'
-                  }`}
-                >
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      import.meta.env.VITE_AI_ENABLED === 'true'
-                        ? 'bg-emerald-400'
-                        : 'bg-red-400'
-                    }`}
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://exemplo.com/seu-link-longo"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                   />
-                  Slug por IA
+                  <div
+                    className={`flex items-center gap-1.5 px-3 h-9 rounded-md border text-xs font-medium select-none ${
+                      import.meta.env.VITE_AI_ENABLED === 'true'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        : 'bg-red-500/10 border-red-500/30 text-red-400'
+                    }`}
+                  >
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        import.meta.env.VITE_AI_ENABLED === 'true'
+                          ? 'bg-emerald-400'
+                          : 'bg-red-400'
+                      }`}
+                    />
+                    Slug por IA
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={createLink.isPending}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-5"
+                  >
+                    {createLink.isPending ? 'Encurtando...' : 'Encurtar'}
+                  </Button>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={createLink.isPending}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-5"
-                >
-                  {createLink.isPending ? 'Encurtando...' : 'Encurtar'}
-                </Button>
+
+                <div>
+                  <p className="text-xs text-zinc-400 mb-1.5">
+                    Data de expiração{' '}
+                    <span className="text-zinc-600">(opcional)</span>
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                      onFocus={() => {
+                        if (!expiresAt) setExpiresAt(defaultExpiresAt());
+                      }}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="h-9 px-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 [color-scheme:dark]"
+                    />
+                    {expiresAt && (
+                      <button
+                        type="button"
+                        onClick={() => setExpiresAt('')}
+                        className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-1 rounded hover:bg-zinc-800"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs mt-1.5">
+                    {expiresAt ? (
+                      <span className="text-emerald-400">
+                        Expira em {formatExpiresAt(expiresAt)}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600">
+                        Deixe em branco para nunca expirar. Após a data, o link
+                        retorna erro 410.
+                      </span>
+                    )}
+                  </p>
+                </div>
               </form>
-              <p className="text-zinc-600 text-xs mt-2">
+              <p className="text-zinc-600 text-xs mt-3">
                 A IA gera um slug legível baseado no conteúdo da URL — nada de{' '}
                 <code className="bg-zinc-800 px-1 py-0.5 rounded text-zinc-400">
                   xB3k9
@@ -273,6 +341,19 @@ export function Dashboard() {
                           {link.aiGenerated && (
                             <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-1.5">
                               IA
+                            </Badge>
+                          )}
+                          {link.expiresAt && (
+                            <Badge
+                              className={`text-xs px-1.5 ${
+                                isExpired(link.expiresAt)
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                  : 'bg-zinc-700/50 text-zinc-400 border-zinc-600/30'
+                              }`}
+                            >
+                              {isExpired(link.expiresAt)
+                                ? 'Expirado'
+                                : `Expira ${new Date(link.expiresAt).toLocaleDateString('pt-BR')}`}
                             </Badge>
                           )}
                         </div>

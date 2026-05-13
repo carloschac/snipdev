@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsService } from '@/services/api';
 import { Sidebar } from '@/components/Sidebar';
-import { Topbar } from '@/components/Topbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -33,6 +32,8 @@ interface LinkStats {
   clicksByDay: Record<string, number>;
   clicksByBrowser: Record<string, number>;
   clicksByReferer: Record<string, number>;
+  clicksByCountry: Record<string, number>;
+  clicksByDevice: Record<string, number>;
 }
 
 const COLORS = ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
@@ -70,6 +71,16 @@ export function LinkAnalytics() {
 
   const refererData = stats
     ? Object.entries(stats.clicksByReferer).sort(([, a], [, b]) => b - a)
+    : [];
+
+  const countryData = stats
+    ? Object.entries(stats.clicksByCountry).sort(([, a], [, b]) => b - a)
+    : [];
+
+  const deviceData = stats
+    ? Object.entries(stats.clicksByDevice)
+        .sort(([, a], [, b]) => b - a)
+        .map(([name, value]) => ({ name, value }))
     : [];
 
   return (
@@ -277,6 +288,80 @@ export function LinkAnalytics() {
                           </div>
                         ))}
                       </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* País + Dispositivo */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-zinc-800">
+                      <p className="text-sm font-medium">Por país</p>
+                    </div>
+                    {countryData.length === 0 ? (
+                      <div className="p-5 text-zinc-500 text-sm">Sem dados</div>
+                    ) : (
+                      <div className="divide-y divide-zinc-800">
+                        {countryData.slice(0, 8).map(([country, count]) => (
+                          <div
+                            key={country}
+                            className="flex items-center justify-between px-5 py-3"
+                          >
+                            <p className="text-sm text-zinc-300">{country}</p>
+                            <span className="text-sm font-medium text-white ml-4">
+                              {count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+                    <p className="text-sm font-medium mb-4">Por dispositivo</p>
+                    {deviceData.length === 0 ? (
+                      <div className="h-48 flex items-center justify-center text-zinc-500 text-sm">
+                        Sem dados
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={deviceData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {deviceData.map((_, index) => (
+                              <Cell
+                                key={index}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              background: '#18181b',
+                              border: '1px solid #27272a',
+                              borderRadius: 8,
+                              fontSize: 12,
+                            }}
+                            itemStyle={{ color: '#10b981' }}
+                          />
+                          <Legend
+                            iconType="circle"
+                            iconSize={8}
+                            formatter={(value) => (
+                              <span style={{ color: '#a1a1aa', fontSize: 11 }}>
+                                {value}
+                              </span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
                     )}
                   </div>
                 </div>

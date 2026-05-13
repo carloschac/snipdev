@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { authController } from './modules/auth/auth.controller';
 import { linksController } from './modules/links/links.controller';
@@ -18,6 +19,11 @@ app.register(cors, {
 });
 app.register(helmet);
 app.register(jwt, { secret: process.env.JWT_SECRET! });
+app.register(rateLimit, {
+  global: true,
+  max: 200,
+  timeWindow: '1 minute',
+});
 
 // Rotas
 app.register(authController);

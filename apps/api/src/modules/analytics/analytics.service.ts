@@ -11,16 +11,14 @@ export class AnalyticsService {
         aiGenerated: true,
         active: true,
         public: true,
+        expiresAt: true,
         createdAt: true,
         _count: { select: { clicks: true } },
       },
     });
 
     const totalLinks = links.length;
-    const totalClicks = links.reduce(
-      (sum, link) => sum + link._count.clicks,
-      0,
-    );
+    const totalClicks = links.reduce((sum, link) => sum + link._count.clicks, 0);
     const activeLinks = links.filter((link) => link.active).length;
 
     return {
@@ -71,6 +69,24 @@ export class AnalyticsService {
       {},
     );
 
+    const clicksByCountry = link.clicks.reduce(
+      (acc: Record<string, number>, click) => {
+        const country = click.country || 'Desconhecido';
+        acc[country] = (acc[country] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
+
+    const clicksByDevice = link.clicks.reduce(
+      (acc: Record<string, number>, click) => {
+        const device = click.device || 'Desconhecido';
+        acc[device] = (acc[device] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
+
     return {
       link: {
         id: link.id,
@@ -85,6 +101,8 @@ export class AnalyticsService {
       clicksByDay,
       clicksByBrowser,
       clicksByReferer,
+      clicksByCountry,
+      clicksByDevice,
     };
   }
 
