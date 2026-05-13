@@ -9,7 +9,9 @@ import {
 interface User {
   id: string;
   email: string;
-  name?: string;
+  name?: string | null;
+  username?: string | null;
+  profileName?: string | null;
 }
 
 interface AuthContextType {
@@ -17,6 +19,7 @@ interface AuthContextType {
   token: string | null;
   login: (user: User, token: string) => void;
   logout: () => void;
+  updateUser: (user: User) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -52,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  const updateUser = (updated: User) => {
+    setUser(updated);
+    localStorage.setItem('user', JSON.stringify(updated));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -59,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         login,
         logout,
+        updateUser,
         isAuthenticated: !!token,
         isLoading,
       }}

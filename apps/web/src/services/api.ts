@@ -27,6 +27,12 @@ export const authService = {
     api.post('/auth/register', { email, password, name }),
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+  resetPassword: (token: string, newPassword: string) =>
+    api.post('/auth/reset-password', { token, newPassword }),
 };
 
 export const linksService = {
@@ -46,4 +52,8 @@ export const analyticsService = {
 
 export const profileService = {
   getPublic: (userId: string) => api.get(`/profile/${userId}`),
+  getMe: () => api.get('/me'),
+  updateMe: (data: { name?: string; username?: string; profileName?: string }) =>
+    api.patch('/me', data),
+  getByUsername: (username: string) => api.get(`/u/${username}`),
 };
