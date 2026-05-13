@@ -37,7 +37,10 @@ app.get('/health', async () => ({ status: 'ok', timestamp: new Date() }));
 
 const start = async () => {
   try {
-    await app.listen({ port: Number(process.env.PORT) || 3333 });
+    await app.listen({
+      port: Number(process.env.PORT) || 3333,
+      host: '0.0.0.0',
+    });
     console.log(`🚀 API rodando em http://localhost:3333`);
   } catch (err) {
     app.log.error(err);
