@@ -11,19 +11,23 @@ const createSchema = z.object({
 
 export async function linksController(app: FastifyInstance) {
   // Redirecionar — rota pública
-  app.get('/r/:slug', async (request, reply) => {
-    try {
-      const { slug } = request.params as { slug: string };
-      const originalUrl = await linksService.redirect(slug, {
-        ip: request.ip,
-        referer: request.headers.referer,
-        userAgent: request.headers['user-agent'],
-      });
-      return reply.redirect(originalUrl);
-    } catch (err: any) {
-      return reply.status(404).send({ error: err.message });
-    }
-  });
+  app.get(
+    '/r/:slug',
+    { config: { rateLimit: { max: 100, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      try {
+        const { slug } = request.params as { slug: string };
+        const originalUrl = await linksService.redirect(slug, {
+          ip: request.ip,
+          referer: request.headers.referer,
+          userAgent: request.headers['user-agent'],
+        });
+        return reply.redirect(originalUrl);
+      } catch (err: any) {
+        return reply.status(404).send({ error: err.message });
+      }
+    },
+  );
 
   // Perfil público — rota pública
   app.get('/profile/:userId', async (request, reply) => {
