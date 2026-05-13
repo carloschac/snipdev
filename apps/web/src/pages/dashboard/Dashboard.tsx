@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/auth.context';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { linksService, analyticsService } from '@/services/api';
@@ -18,6 +17,7 @@ interface Link {
   aiGenerated: boolean;
   active: boolean;
   public: boolean;
+  expiresAt: string | null;
   clicks: number;
   createdAt: string;
 }
@@ -43,10 +43,16 @@ function getFavicon(url: string) {
   return '🔗';
 }
 
+function isExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt) < new Date();
+}
+
 export function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [url, setUrl] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'ai'>('all');
@@ -60,13 +66,14 @@ export function Dashboard() {
   });
 
   const createLink = useMutation({
-    mutationFn: async (url: string) => {
-      const { data } = await linksService.create(url);
+    mutationFn: async ({ url, expiresAt }: { url: string; expiresAt?: string }) => {
+      const { data } = await linksService.create(url, expiresAt || undefined);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
       setUrl('');
+      setExpiresAt('');
       setError('');
     },
     onError: (err: any) => {
@@ -104,7 +111,12 @@ export function Dashboard() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
-    createLink.mutate(url);
+    createLink.mutate({
+      url,
+      expiresAt: expiresAt
+        ? new Date(expiresAt).toISOString()
+        : undefined,
+    });
   };
 
   const handleCopy = (shortUrl: string) => {
@@ -143,6 +155,14 @@ export function Dashboard() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   className="flex-1 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                />
+                <input
+                  type="date"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  title="Data de expiração (opcional)"
+                  className="h-9 px-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 [color-scheme:dark]"
                 />
                 <div
                   className={`flex items-center gap-1.5 px-3 h-9 rounded-md border text-xs font-medium select-none ${
@@ -273,6 +293,19 @@ export function Dashboard() {
                           {link.aiGenerated && (
                             <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs px-1.5">
                               IA
+                            </Badge>
+                          )}
+                          {link.expiresAt && (
+                            <Badge
+                              className={`text-xs px-1.5 ${
+                                isExpired(link.expiresAt)
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                  : 'bg-zinc-700/50 text-zinc-400 border-zinc-600/30'
+                              }`}
+                            >
+                              {isExpired(link.expiresAt)
+                                ? 'Expirado'
+                                : `Expira ${new Date(link.expiresAt).toLocaleDateString('pt-BR')}`}
                             </Badge>
                           )}
                         </div>

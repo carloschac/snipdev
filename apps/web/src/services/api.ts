@@ -30,7 +30,8 @@ export const authService = {
 };
 
 export const linksService = {
-  create: (url: string) => api.post('/links', { url }),
+  create: (url: string, expiresAt?: string) =>
+    api.post('/links', { url, expiresAt }),
   list: () => api.get('/links'),
   delete: (id: string) => api.delete(`/links/${id}`),
   togglePublic: (id: string) => api.patch(`/links/${id}/toggle-public`, {}),

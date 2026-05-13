@@ -11,6 +11,7 @@ export class AnalyticsService {
         aiGenerated: true,
         active: true,
         public: true,
+        expiresAt: true,
         createdAt: true,
         _count: { select: { clicks: true } },
       },

@@ -7,6 +7,7 @@ const linksService = new LinksService();
 
 const createSchema = z.object({
   url: z.string().url(),
+  expiresAt: z.string().datetime().optional(),
 });
 
 export async function linksController(app: FastifyInstance) {
@@ -24,6 +25,9 @@ export async function linksController(app: FastifyInstance) {
         });
         return reply.redirect(originalUrl);
       } catch (err: any) {
+        if (err.message === 'Link expirado') {
+          return reply.status(410).send({ error: err.message });
+        }
         return reply.status(404).send({ error: err.message });
       }
     },
@@ -43,9 +47,13 @@ export async function linksController(app: FastifyInstance) {
   // Rotas protegidas
   app.post('/links', { preHandler: authMiddleware }, async (request, reply) => {
     try {
-      const { url } = createSchema.parse(request.body);
+      const { url, expiresAt } = createSchema.parse(request.body);
       const user = request.user as { id: string };
-      const link = await linksService.create(user.id, url);
+      const link = await linksService.create(
+        user.id,
+        url,
+        expiresAt ? new Date(expiresAt) : undefined,
+      );
       return reply.status(201).send(link);
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });

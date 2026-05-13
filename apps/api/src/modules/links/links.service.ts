@@ -20,7 +20,7 @@ function parseDevice(ua?: string): string {
 }
 
 export class LinksService {
-  async create(userId: string, originalUrl: string) {
+  async create(userId: string, originalUrl: string, expiresAt?: Date) {
     const aiEnabled = process.env.AI_ENABLED === 'true';
     let slug: string;
     let aiGenerated = false;
@@ -33,7 +33,7 @@ export class LinksService {
     }
 
     const link = await prisma.link.create({
-      data: { slug, originalUrl, userId, aiGenerated, public: true },
+      data: { slug, originalUrl, userId, aiGenerated, public: true, expiresAt },
       select: {
         id: true,
         slug: true,
@@ -41,6 +41,7 @@ export class LinksService {
         aiGenerated: true,
         active: true,
         public: true,
+        expiresAt: true,
         createdAt: true,
       },
     });
@@ -62,6 +63,7 @@ export class LinksService {
         aiGenerated: true,
         active: true,
         public: true,
+        expiresAt: true,
         createdAt: true,
         _count: { select: { clicks: true } },
       },
@@ -139,6 +141,10 @@ export class LinksService {
       where: { slug, active: true },
     });
     if (!link) throw new Error('Link não encontrado');
+
+    if (link.expiresAt && link.expiresAt < new Date()) {
+      throw new Error('Link expirado');
+    }
 
     const geo = meta.ip ? geoip.lookup(meta.ip) : null;
 
