@@ -1,3 +1,9 @@
 {
-  "root": "apps/api"
+  "root": "apps/api",
+  "install": {
+    "cmd": "pnpm install --no-frozen-lockfile"
+  },
+  "build": {
+    "cmd": "pnpm build"
+  }
 }
