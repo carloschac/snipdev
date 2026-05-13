@@ -8,30 +8,33 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  links     Link[]
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String?
+  username    String?  @unique
+  profileName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  links       Link[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
 
 model Link {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String    @id @default(cuid())
+  slug        String    @unique
   originalUrl String
   title       String?
-  aiGenerated Boolean  @default(false)
+  aiGenerated Boolean   @default(false)
   active      Boolean   @default(true)
   public      Boolean   @default(true)
   expiresAt   DateTime?
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   clicks      Click[]
 
   @@map("links")
@@ -50,4 +53,16 @@ model Click {
   createdAt DateTime @default(now())
 
   @@map("clicks")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("password_reset_tokens")
 }
